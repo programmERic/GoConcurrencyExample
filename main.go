@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
 )
 
 func main() {
@@ -31,8 +30,9 @@ func startMonitor(urls []string) {
 	for i := 0; i < 2; i++ {
 		for _, u := range urls {
 			go checkSiteStatus(u, status)
+			fmt.Println(<-status)
 		}
-		fmt.Println(<-status)
+
 		fmt.Println()
 	}
 }
@@ -43,8 +43,9 @@ func checkSiteStatus(s string, c chan string) {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	c <- fmt.Sprint(r.Status, " returned status from: ", s)
-	time.Sleep(5 * time.Second)
+
+	//time.Sleep(5 * time.Second)
+	c <- fmt.Sprint(r.Status, " returned from: ", s)
 }
 
 func obtainUrlsFromFile(filename string) []string {

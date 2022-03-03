@@ -1,5 +1,5 @@
 http://github.com
 https://go.dev/
 https://gobyexample.com/
-https://www.gitlab.com/
+https://gitlab.com/
 https://google.com/
