@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+var dev = true
+
 type siteData struct {
 	url   string
 	pings int
@@ -32,29 +34,39 @@ func main() {
 
 func startMonitor(urls []string) {
 
-	status := make(chan string, len(urls))
+	statuses := make(chan *siteData, len(urls))
 
-	var sites []siteData
+	var sites []*siteData
 	for _, url := range urls {
 		newSite := siteData{
 			url:   url,
 			pings: 0,
 			okays: 0,
 		}
-		sites = append(sites, newSite)
+		sites = append(sites, &newSite)
 	}
 
-	for i := 0; i < 2; i++ {
-		for _, s := range sites {
-			go checkSiteStatus(&s, status)
-			fmt.Println(<-status)
-		}
-
-		fmt.Println()
+	for _, site := range sites {
+		go checkSiteStatus(site, statuses)
 	}
+
+	for rs := range statuses {
+
+		go func(sd *siteData) {
+			if dev {
+				time.Sleep(10 * time.Second)
+			} else {
+				time.Sleep(time.Minute)
+			}
+
+			checkSiteStatus(sd, statuses)
+		}(rs)
+	}
+	fmt.Println("Done.")
 }
 
-func checkSiteStatus(s *siteData, c chan string) {
+func checkSiteStatus(s *siteData, c chan *siteData) {
+
 	r, err := http.Get(s.url)
 	if err != nil {
 		fmt.Println(err)
@@ -65,10 +77,10 @@ func checkSiteStatus(s *siteData, c chan string) {
 	if r.StatusCode == 200 {
 		s.okays++
 	}
-	perecentUp := 100.0 * float32(s.okays) / float32(s.pings)
+	percentUp := 100.0 * float32(s.okays) / float32(s.pings)
+	fmt.Println(r.Status, " returned from: ", s.url, " Up time percentage:", percentUp, ", ", s.okays, " OKs out of ", s.pings, "pings.")
 
-	time.Sleep(5 * time.Second)
-	c <- fmt.Sprint(r.Status, " returned from: ", s.url, " Up time percentage:", perecentUp)
+	c <- s
 }
 
 func obtainUrlsFromFile(filename string) []string {
